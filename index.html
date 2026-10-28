@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Age Scanner</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100dvh;background:#07070c;color:#f4f4f8;display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;padding:24px;overflow-x:hidden}
+  .glow{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .glow::before,.glow::after{content:"";position:absolute;border-radius:50%;filter:blur(100px);opacity:.55}
+  .glow::before{width:55vmax;height:55vmax;left:-18vmax;top:-22vmax;
+    background:radial-gradient(circle at 40% 40%,#7c5cff,transparent 65%)}
+  .glow::after{width:50vmax;height:50vmax;right:-18vmax;bottom:-22vmax;
+    background:radial-gradient(circle at 60% 40%,#22d3ee,transparent 62%)}
+  main{position:relative;z-index:2;width:100%;max-width:520px;text-align:center;
+    background:linear-gradient(165deg,rgba(255,255,255,.085),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.1);border-radius:26px;padding:34px 24px 26px;
+    box-shadow:0 28px 80px -28px rgba(0,0,0,.95),inset 0 1px 0 rgba(255,255,255,.09);
+    backdrop-filter:blur(22px) saturate(150%)}
+  h1{font-size:clamp(26px,7vw,34px);letter-spacing:-1.2px;font-weight:750;margin-bottom:10px}
+  h1 em{font-style:normal;background:linear-gradient(100deg,#22d3ee,#7c5cff 50%,#ff5c8a);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  p{color:#9a9aad;font-size:14px;margin-bottom:22px}
+  a{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
+    padding:15px 18px;border-radius:15px;font-weight:650;font-size:15px;margin-bottom:10px;
+    color:#0a0a12;background:linear-gradient(100deg,#b3a6ff,#7c5cff 42%,#22d3ee);
+    box-shadow:0 14px 32px -16px rgba(124,92,255,.95),inset 0 1px 0 rgba(255,255,255,.45)}
+  a.ghost{background:rgba(255,255,255,.055);color:#f4f4f8;border:1px solid rgba(255,255,255,.2);box-shadow:none;font-weight:600}
+  small{display:block;margin-top:14px;color:#5d5d70;font-size:11.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<main>
+  <h1>Age <em>Scanner</em></h1>
+  <p>Photo in, estimated age out. Runs entirely in your browser — no upload, no account, works offline.</p>
+  <a href="AgeScanner.html">Open Age Scanner</a>
+  <a class="ghost" href="AgeGuesser.html">Try the Age Guesser quiz</a>
+  <small>Estimates are approximate (±5–8 years typical). Nothing is sent anywhere.</small>
+</main>
+</body>
+</html>
