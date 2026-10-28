@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08080d">
+<title>Age Guesser</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#08080d;
+    --card:rgba(255,255,255,.055);
+    --card-2:rgba(255,255,255,.09);
+    --stroke:rgba(255,255,255,.10);
+    --stroke-2:rgba(255,255,255,.18);
+    --txt:#f4f4f8;
+    --muted:#9b9bad;
+    --a1:#7c5cff;
+    --a2:#22d3ee;
+    --a3:#ff5c8a;
+    --ok:#3ddc97;
+  }
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ambient background */
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .bg::before,.bg::after{content:"";position:absolute;border-radius:50%;filter:blur(90px);opacity:.55}
+  .bg::before{width:60vmax;height:60vmax;left:-18vmax;top:-22vmax;
+    background:radial-gradient(circle at 30% 30%,#7c5cff,transparent 65%);
+    animation:drift1 22s ease-in-out infinite alternate}
+  .bg::after{width:55vmax;height:55vmax;right:-20vmax;bottom:-24vmax;
+    background:radial-gradient(circle at 60% 40%,#22d3ee,transparent 62%);
+    animation:drift2 26s ease-in-out infinite alternate}
+  .bg i{position:absolute;left:35%;top:45%;width:38vmax;height:38vmax;border-radius:50%;
+    background:radial-gradient(circle,#ff5c8a,transparent 65%);filter:blur(100px);opacity:.3;
+    animation:drift3 30s ease-in-out infinite alternate}
+  @keyframes drift1{to{transform:translate3d(6vmax,4vmax,0) scale(1.15)}}
+  @keyframes drift2{to{transform:translate3d(-7vmax,-5vmax,0) scale(1.1)}}
+  @keyframes drift3{to{transform:translate3d(-5vmax,6vmax,0) scale(1.2)}}
+  .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.35;
+    background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);
+    background-size:3px 3px;mix-blend-mode:overlay}
+
+  .app{position:relative;z-index:2;width:100%;max-width:560px}
+
+  .card{
+    position:relative;
+    background:linear-gradient(160deg,rgba(255,255,255,.085),rgba(255,255,255,.035));
+    border:1px solid var(--stroke);
+    border-radius:26px;
+    padding:26px 22px 22px;
+    box-shadow:0 24px 70px -24px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.09);
+    backdrop-filter:blur(22px) saturate(150%);
+    -webkit-backdrop-filter:blur(22px) saturate(150%);
+    overflow:hidden;
+  }
+
+  .screen{display:none;animation:screenIn .42s cubic-bezier(.2,.9,.25,1) both}
+  .screen.active{display:block}
+  @keyframes screenIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+
+  /* ---------- start ---------- */
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .logo{
+    width:36px;height:36px;border-radius:12px;flex:none;
+    background:conic-gradient(from 210deg,var(--a1),var(--a2),var(--a3),var(--a1));
+    display:grid;place-items:center;font-weight:800;font-size:15px;color:#08080d;
+    box-shadow:0 8px 24px -8px var(--a1);
+  }
+  .logo span{background:rgba(8,8,13,.85);color:#fff;width:100%;height:100%;border-radius:11px;display:grid;place-items:center;font-size:13px;letter-spacing:-.5px}
+  .brand b{font-size:15px;letter-spacing:.2px;font-weight:600}
+  .brand small{display:block;color:var(--muted);font-size:11.5px;font-weight:500;letter-spacing:.3px;text-transform:uppercase}
+
+  h1{font-size:clamp(28px,7vw,36px);line-height:1.1;letter-spacing:-1.2px;font-weight:750;margin-bottom:12px}
+  h1 em{font-style:normal;background:linear-gradient(100deg,var(--a2),var(--a1) 45%,var(--a3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{color:var(--muted);font-size:15px;margin-bottom:24px;max-width:42ch}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    padding:16px 20px;border:0;border-radius:16px;cursor:pointer;
+    font-family:inherit;font-size:16px;font-weight:650;letter-spacing:.1px;color:#0a0a12;
+    background:linear-gradient(100deg,#a99bff,#7c5cff 40%,#22d3ee);
+    box-shadow:0 14px 34px -14px rgba(124,92,255,.95),inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .16s cubic-bezier(.2,.9,.25,1),filter .2s,box-shadow .2s;
+  }
+  .btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .btn:active{transform:scale(.978)}
+  .btn.ghost{
+    background:var(--card);color:var(--txt);border:1px solid var(--stroke-2);
+    box-shadow:none;font-weight:600;font-size:14.5px;padding:13px 18px;
+  }
+  .btn.ghost:hover{background:var(--card-2)}
+  .btn:focus-visible,.opt:focus-visible,.chip:focus-visible{outline:2px solid var(--a2);outline-offset:3px}
+  .btn-row{display:flex;gap:10px;margin-top:10px}
+  .btn-row .btn{width:auto;flex:1}
+
+  .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--stroke);color:var(--muted);font-size:12.5px}
+  .meta div{display:flex;align-items:center;gap:7px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+
+  /* ---------- quiz ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px}
+  .step{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .back{
+    background:none;border:0;color:var(--muted);font-family:inherit;font-size:13.5px;font-weight:600;
+    cursor:pointer;padding:6px 10px;border-radius:9px;display:flex;align-items:center;gap:5px;
+    transition:color .2s,background .2s;
+  }
+  .back:hover{color:var(--txt);background:var(--card)}
+  .back[disabled]{opacity:0;pointer-events:none}
+  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-bottom:24px}
+  .bar i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,var(--a2),var(--a1) 60%,var(--a3));
+    transition:width .45s cubic-bezier(.3,.9,.25,1);box-shadow:0 0 14px rgba(124,92,255,.8)}
+
+  .qwrap{animation:qIn .38s cubic-bezier(.2,.9,.25,1) both}
+  @keyframes qIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+  .q{font-size:clamp(19px,4.6vw,23px);line-height:1.32;font-weight:680;letter-spacing:-.5px;margin-bottom:20px}
+  .opts{display:flex;flex-direction:column;gap:9px}
+  .opt{
+    display:flex;align-items:center;gap:13px;width:100%;text-align:left;
+    background:var(--card);border:1px solid var(--stroke);border-radius:15px;
+    padding:14px 15px;color:var(--txt);font-family:inherit;font-size:14.8px;font-weight:500;
+    cursor:pointer;transition:background .16s,border-color .16s,transform .16s;
+  }
+  .opt:hover{background:var(--card-2);border-color:var(--stroke-2);transform:translateX(3px)}
+  .opt:active{transform:scale(.985)}
+  .opt .k{
+    flex:none;width:25px;height:25px;border-radius:8px;display:grid;place-items:center;
+    font-size:11.5px;font-weight:700;color:var(--muted);
+    background:rgba(255,255,255,.07);border:1px solid var(--stroke);transition:.16s;
+  }
+  .opt:hover .k{color:#0a0a12;background:linear-gradient(140deg,var(--a2),var(--a1));border-color:transparent}
+  .hint{color:var(--muted);font-size:12px;text-align:center;margin-top:18px}
+
+  /* ---------- result ---------- */
+  .res-head{text-align:center;margin-bottom:6px}
+  .res-head p{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:600}
+  .age{text-align:center;font-size:clamp(72px,20vw,96px);line-height:.95;font-weight:800;letter-spacing:-5px;
+    background:linear-gradient(160deg,#fff,#b9a9ff 55%,#22d3ee);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 10px 40px rgba(124,92,255,.45));margin:6px 0 2px}
+  .range{text-align:center;color:var(--muted);font-size:14px;margin-bottom:20px}
+  .range b{color:var(--txt);font-weight:650}
+
+  .persona{
+    display:flex;align-items:center;gap:13px;padding:15px;border-radius:16px;
+    background:linear-gradient(120deg,rgba(124,92,255,.20),rgba(34,211,238,.10));
+    border:1px solid rgba(124,92,255,.32);margin-bottom:16px;
+  }
+  .persona .em{font-size:24px;line-height:1}
+  .persona b{display:block;font-size:15px;letter-spacing:-.2px}
+  .persona span{font-size:12.5px;color:var(--muted)}
+
+  .conf{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:12.5px;color:var(--muted)}
+  .conf .track{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+  .conf .track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--a3),var(--a2));transition:width .9s cubic-bezier(.2,.9,.25,1)}
+  .conf b{color:var(--txt);font-weight:650}
+
+  .tells{margin-bottom:20px}
+  .tells h3{font-size:11.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:650;margin-bottom:10px}
+  .tell{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#d8d8e4;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .tell:last-child{border-bottom:0}
+  .tell .n{flex:none;width:18px;height:18px;border-radius:6px;background:rgba(34,211,238,.16);color:var(--a2);
+    font-size:10.5px;font-weight:800;display:grid;place-items:center;margin-top:2px}
+
+  .feedback{padding-top:18px;border-top:1px solid var(--stroke)}
+  .feedback p{font-size:13px;color:var(--muted);text-align:center;margin-bottom:11px}
+  .chips{display:flex;gap:8px}
+  .chip{
+    flex:1;padding:11px 6px;border-radius:12px;cursor:pointer;font-family:inherit;
+    font-size:13px;font-weight:600;color:var(--txt);
+    background:var(--card);border:1px solid var(--stroke);transition:.16s;
+  }
+  .chip:hover{background:var(--card-2);border-color:var(--stroke-2);transform:translateY(-1px)}
+  .chip.done{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.45);color:var(--ok)}
+  .thanks{text-align:center;font-size:13px;color:var(--ok);font-weight:600}
+
+  .stats{display:flex;gap:10px;margin-top:14px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--stroke);border-radius:13px;padding:11px 8px;text-align:center}
+  .stat b{display:block;font-size:17px;font-weight:750;letter-spacing:-.4px}
+  .stat span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+
+  .foot{text-align:center;color:#5f5f72;font-size:11.5px;margin-top:16px;letter-spacing:.2px}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @media (max-width:400px){
+    .card{padding:22px 17px 18px;border-radius:22px}
+    .opt{font-size:14px;padding:13px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+<div class="bg"><i></i></div>
+<div class="grain"></div>
+
+<div class="app">
+  <div class="card">
+
+    <!-- START -->
+    <section class="screen active" id="s-start">
+      <div class="brand">
+        <div class="logo"><span>AG</span></div>
+        <div><b>Age Guesser</b><small>Offline edition</small></div>
+      </div>
+      <h1>I can guess your <em>age</em> from 12 answers.</h1>
+      <p class="lead">No photos, no camera, no sign-up. Answer honestly and the app estimates how old you are — plus what gave you away.</p>
+      <button class="btn" id="startBtn">Start guessing
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <div class="meta">
+        <div><span class="dot"></span>Works with no internet</div>
+        <div><span class="dot"></span>Nothing leaves your device</div>
+      </div>
+      <div class="stats" id="startStats" style="display:none">
+        <div class="stat"><b id="stTotal">0</b><span>Guesses</span></div>
+        <div class="stat"><b id="stAcc">0%</b><span>Spot on</span></div>
+        <div class="stat"><b id="stOff">0</b><span>Avg off</span></div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="screen" id="s-quiz">
+      <div class="top">
+        <span class="step" id="stepTxt">Question 1 of 12</span>
+        <button class="back" id="backBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back
+        </button>
+      </div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="qwrap" id="qwrap">
+        <h2 class="q" id="qText"></h2>
+        <div class="opts" id="opts"></div>
+      </div>
+      <p class="hint">Tip: press 1–4 on your keyboard</p>
+    </section>
+
+    <!-- RESULT -->
+    <section class="screen" id="s-result">
+      <div class="res-head"><p>My guess</p></div>
+      <div class="age" id="ageOut">0</div>
+      <div class="range" id="rangeOut"></div>
+      <div class="persona">
+        <div class="em" id="pEmoji">*</div>
+        <div><b id="pName"></b><span id="pLine"></span></div>
+      </div>
+      <div class="conf">
+        <span>Confidence</span>
+        <div class="track"><i id="confBar"></i></div>
+        <b id="confTxt"></b>
+      </div>
+      <div class="tells">
+        <h3>What gave you away</h3>
+        <div id="tellsOut"></div>
+      </div>
+      <div class="feedback" id="fbBlock">
+        <p>How close was I?</p>
+        <div class="chips">
+          <button class="chip" data-fb="young">Too young</button>
+          <button class="chip" data-fb="spot">Spot on</button>
+          <button class="chip" data-fb="old">Too old</button>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" id="againBtn">Play again</button>
+        <button class="btn" id="homeBtn">Done</button>
+      </div>
+    </section>
+
+  </div>
+  <p class="foot">Age Guesser — a single file, fully offline. Your answers are saved only on this device.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* Each option: a = implied age, w = how strongly it pulls the estimate */
+  var QUESTIONS = [
+    {
+      q: "When did you finish school (10th or 12th)?",
+      options: [
+        { t: "Over 20 years ago", a: 50, w: 3.2 },
+        { t: "10–20 years ago",   a: 36, w: 3.2 },
+        { t: "4–10 years ago",    a: 26, w: 3.2 },
+        { t: "Within the last 3 years", a: 19, w: 3.2 }
+      ]
+    },
+    {
+      q: "The first music player you actually owned?",
+      options: [
+        { t: "Cassette player or Walkman", a: 49, w: 1.6 },
+        { t: "CD player or Discman",       a: 39, w: 1.6 },
+        { t: "iPod or MP3 player",         a: 31, w: 1.5 },
+        { t: "Just my phone, streaming",    a: 22, w: 1.6 }
+      ]
+    },
+    {
+      q: "Your history with the landline phone?",
+      options: [
+        { t: "Grew up with one, still remember the number", a: 48, w: 1.3 },
+        { t: "We had one, mostly for the internet",         a: 35, w: 1.3 },
+        { t: "Only ever saw it at relatives' houses",       a: 25, w: 1.3 },
+        { t: "A landline? Never lived with one",            a: 18, w: 1.3 }
+      ]
+    },
+    {
+      q: "The first social app you really used?",
+      options: [
+        { t: "Orkut or early Facebook",     a: 37, w: 1.5 },
+        { t: "Facebook or Twitter as a teen", a: 31, w: 1.4 },
+        { t: "Instagram",                   a: 26, w: 1.4 },
+        { t: "Snapchat, TikTok or Reels",   a: 20, w: 1.5 }
+      ]
+    },
+    {
+      q: "Which of these did you watch arrive?",
+      options: [
+        { t: "Colour TV and cable",   a: 50, w: 1.5 },
+        { t: "Dial-up internet",      a: 38, w: 1.5 },
+        { t: "Smartphones",           a: 29, w: 1.5 },
+        { t: "AI assistants",         a: 19, w: 1.5 }
+      ]
+    },
+    {
+      q: "How do you usually pay for things?",
+      options: [
+        { t: "Mostly cash",                 a: 48, w: 1.1 },
+        { t: "Card, mostly",                a: 36, w: 1.1 },
+        { t: "UPI or phone tap",            a: 29, w: 1.1 },
+        { t: "Whatever's fastest, split on apps", a: 24, w: 1.1 }
+      ]
+    },
+    {
+      q: "You sit for two hours. Your back says?",
+      options: [
+        { t: "Back pain? What back pain?", a: 21, w: 1.2 },
+        { t: "A little stiffness",         a: 28, w: 1.2 },
+        { t: "Needs a stretch and a walk", a: 36, w: 1.2 },
+        { t: "I have a physio on speed dial", a: 52, w: 1.2 }
+      ]
+    },
+    {
+      q: "Your ideal Friday night?",
+      options: [
+        { t: "Out till 2am, no plan",        a: 22, w: 1.3 },
+        { t: "Dinner out, home by 11",       a: 29, w: 1.3 },
+        { t: "Home by 9, something cosy",    a: 37, w: 1.3 },
+        { t: "Friday night? I'm asleep",     a: 49, w: 1.3 }
+      ]
+    },
+    {
+      q: "Your group chats right now?",
+      options: [
+        { t: "Under 10 unread, I keep up",        a: 24, w: 1.0 },
+        { t: "Hundreds. I scroll and mute",       a: 31, w: 1.0 },
+        { t: "On silent, always. I reply in days", a: 38, w: 1.0 },
+        { t: "I send voice notes, never text",    a: 48, w: 1.0 }
+      ]
+    },
+    {
+      q: "You need to learn something new. First move?",
+      options: [
+        { t: "Ask someone who knows",       a: 46, w: 1.0 },
+        { t: "Google it, read a bit",       a: 34, w: 1.0 },
+        { t: "A YouTube tutorial",          a: 28, w: 1.0 },
+        { t: "A short video or ask an AI",  a: 21, w: 1.0 }
+      ]
+    },
+    {
+      q: "Honest sleep schedule?",
+      options: [
+        { t: "Asleep by 10:30, up at 6",   a: 45, w: 1.2 },
+        { t: "Midnight to 7ish",           a: 33, w: 1.2 },
+        { t: "2am, alarm at 8:30",         a: 25, w: 1.2 },
+        { t: "Sleep is a rumour",          a: 21, w: 1.2 }
+      ]
+    },
+    {
+      q: "Your relationship with work right now?",
+      options: [
+        { t: "Been there, done that",          a: 49, w: 1.3 },
+        { t: "Building a career, it's fine",   a: 34, w: 1.3 },
+        { t: "Job plus a side hustle",         a: 27, w: 1.3 },
+        { t: "Still figuring it out",          a: 21, w: 1.3 }
+      ]
+    }
+  ];
+
+  var PERSONAS = [
+    { max: 19, em: "\u2726", name: "Chronically Online Teen", line: "You were born with a screen in your hand." },
+    { max: 24, em: "\u26A1", name: "Certified Gen Z", line: "Fast, fluent, allergic to slow websites." },
+    { max: 29, em: "\u25C8", name: "Quarter-Life Millennial", line: "Old enough to remember, young enough to keep up." },
+    { max: 34, em: "\u25C9", name: "Millennial in Denial", line: "You know every 2010s lyric. It shows." },
+    { max: 39, em: "\u25CE", name: "Peak Nostalgia Years", line: "You've started saying 'they don't make it like they used to'." },
+    { max: 44, em: "\u25D0", name: "Back in My Day Energy", line: "You have opinions about how things used to be." },
+    { max: 51, em: "\u25D1", name: "Distinguished Veteran", line: "You've seen three tech revolutions and survived them." },
+    { max: 200, em: "\u2605", name: "Unbothered Legend", line: "You've stopped caring about trends. It's working." }
+  ];
+
+  var state = { i: 0, answers: [], started: false };
+
+  var $ = function(id){ return document.getElementById(id); };
+  var el = {
+    start: $("s-start"), quiz: $("s-quiz"), result: $("s-result"),
+    qText: $("qText"), opts: $("opts"), qwrap: $("qwrap"),
+    step: $("stepTxt"), bar: $("barFill"), back: $("backBtn"),
+    age: $("ageOut"), range: $("rangeOut"), confBar: $("confBar"), confTxt: $("confTxt"),
+    tells: $("tellsOut"), pName: $("pName"), pLine: $("pLine"), pEmoji: $("pEmoji"),
+    fbBlock: $("fbBlock"), stats: $("startStats")
+  };
+
+  function show(which){
+    [el.start, el.quiz, el.result].forEach(function(s){ s.classList.remove("active"); });
+    which.classList.add("active");
+  }
+
+  /* ---------- storage (works offline, on this device only) ---------- */
+  var KEY = "ageguesser.stats.v1";
+  function loadStats(){
+    try {
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return { total: 0, spot: 0, diff: 0, fb: 0 };
+      var s = JSON.parse(raw);
+      return {
+        total: s.total|0, spot: s.spot|0, diff: s.diff|0, fb: s.fb|0
+      };
+    } catch(e){ return { total: 0, spot: 0, diff: 0, fb: 0 }; }
+  }
+  function saveStats(s){
+    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){}
+  }
+  function renderStats(){
+    var s = loadStats();
+    if(!s.total){ el.stats.style.display = "none"; return; }
+    el.stats.style.display = "flex";
+    $("stTotal").textContent = s.total;
+    $("stAcc").textContent = Math.round((s.spot / s.total) * 100) + "%";
+    $("stOff").textContent = s.fb ? (s.diff / s.fb).toFixed(1) : "–";
+  }
+
+  /* ---------- quiz ---------- */
+  function renderQuestion(){
+    var q = QUESTIONS[state.i];
+    el.step.textContent = "Question " + (state.i + 1) + " of " + QUESTIONS.length;
+    el.bar.style.width = ((state.i) / QUESTIONS.length * 100) + "%";
+    el.qText.textContent = q.q;
+    el.opts.innerHTML = "";
+
+    q.options.forEach(function(o, idx){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt";
+      b.innerHTML = '<span class="k">' + (idx + 1) + '</span><span>' + o.t + '</span>';
+      b.addEventListener("click", function(){ pick(idx); });
+      el.opts.appendChild(b);
+    });
+
+    el.back.disabled = state.i === 0;
+
+    // replay the entry animation
+    el.qwrap.style.animation = "none";
+    void el.qwrap.offsetWidth;
+    el.qwrap.style.animation = "";
+  }
+
+  function pick(idx){
+    state.answers[state.i] = idx;
+    if(state.i < QUESTIONS.length - 1){
+      state.i++;
+      renderQuestion();
+    } else {
+      el.bar.style.width = "100%";
+      setTimeout(showResult, 220);
+    }
+  }
+
+  /* ---------- the guess ---------- */
+  function computeGuess(){
+    var sw = 0, swa = 0, i, o;
+    for(i = 0; i < state.answers.length; i++){
+      o = QUESTIONS[i].options[state.answers[i]];
+      sw += o.w;
+      swa += o.w * o.a;
+    }
+    var mean = swa / sw;
+
+    var varSum = 0;
+    for(i = 0; i < state.answers.length; i++){
+      o = QUESTIONS[i].options[state.answers[i]];
+      varSum += o.w * Math.pow(o.a - mean, 2);
+    }
+    var sd = Math.sqrt(varSum / sw);
+
+    var age = Math.round(mean);
+    age = Math.max(14, Math.min(78, age));
+
+    var spread = Math.max(2.5, Math.min(9, 1.15 * sd));
+    var lo = Math.max(13, Math.round(age - spread));
+    var hi = Math.min(85, Math.round(age + spread));
+
+    // confidence 0-100: tighter spread = more confident
+    var conf = Math.round(Math.max(38, Math.min(96, 100 - (sd * 8.5))));
+
+    // what moved the needle most
+    var tells = [];
+    for(i = 0; i < state.answers.length; i++){
+      o = QUESTIONS[i].options[state.answers[i]];
+      tells.push({
+        text: o.t,
+        pull: o.w * Math.abs(o.a - mean) + o.w * 1.2,
+        dir: o.a > mean ? "older" : "younger"
+      });
+    }
+    tells.sort(function(a, b){ return b.pull - a.pull; });
+
+    return {
+      age: age, lo: lo, hi: hi, conf: conf, sd: sd,
+      tells: tells.slice(0, 3),
+      persona: personaFor(age)
+    };
+  }
+
+  function personaFor(age){
+    for(var i = 0; i < PERSONAS.length; i++){
+      if(age <= PERSONAS[i].max) return PERSONAS[i];
+    }
+    return PERSONAS[PERSONAS.length - 1];
+  }
+
+  var lastGuess = null;
+
+  function showResult(){
+    var g = computeGuess();
+    lastGuess = g;
+
+    el.pEmoji.textContent = g.persona.em;
+    el.pName.textContent = g.persona.name;
+    el.pLine.textContent = g.persona.line;
+    el.range.innerHTML = "Most likely between <b>" + g.lo + "</b> and <b>" + g.hi + "</b> years old";
+    el.confBar.style.width = "0%";
+    el.confTxt.textContent = g.conf + "%";
+
+    el.tells.innerHTML = "";
+    g.tells.forEach(function(t, i){
+      var d = document.createElement("div");
+      d.className = "tell";
+      d.innerHTML = '<span class="n">' + (i + 1) + '</span><span>' + t.text + '</span>';
+      el.tells.appendChild(d);
+    });
+
+    // reset feedback buttons
+    el.fbBlock.innerHTML = '<p>How close was I?</p>' +
+      '<div class="chips">' +
+      '<button class="chip" data-fb="young">Too young</button>' +
+      '<button class="chip" data-fb="spot">Spot on</button>' +
+      '<button class="chip" data-fb="old">Too old</button>' +
+      '</div>';
+    bindFeedback();
+
+    show(el.result);
+
+    countUp(g.age);
+    setTimeout(function(){ el.confBar.style.width = g.conf + "%"; }, 120);
+
+    var s = loadStats();
+    s.total += 1;
+    saveStats(s);
+  }
+
+  function countUp(target){
+    var start = performance.now(), dur = 950;
+    var from = Math.max(0, target - 22);
+    function tick(now){
+      var p = Math.min(1, (now - start) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.age.textContent = Math.round(from + (target - from) * e);
+      if(p < 1) requestAnimationFrame(tick);
+      else el.age.textContent = target;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- feedback loop ---------- */
+  function bindFeedback(){
+    var chips = el.fbBlock.querySelectorAll(".chip");
+    Array.prototype.forEach.call(chips, function(c){
+      c.addEventListener("click", function(){
+        if(el.fbBlock.dataset.done === "1") return;
+        el.fbBlock.dataset.done = "1";
+
+        var fb = c.dataset.fb;
+        var s = loadStats();
+        s.fb += 1;
+        if(fb === "spot"){ s.spot += 1; s.diff += 0; }
+        if(fb === "young"){ s.diff += 4; }
+        if(fb === "old"){ s.diff += 4; }
+        saveStats(s);
+        renderStats();
+
+        Array.prototype.forEach.call(chips, function(x){ x.classList.remove("done"); });
+        c.classList.add("done");
+
+        var msg = fb === "spot"
+          ? "Nice — logged. The guesser is learning your tells."
+          : (fb === "young" ? "Noted. I'll lean older next time." : "Noted. I'll lean younger next time.");
+        var p = el.fbBlock.querySelector("p");
+        if(p) p.textContent = msg;
+        p.style.color = "var(--ok)";
+        p.style.fontWeight = "600";
+      });
+    });
+  }
+
+  /* ---------- wiring ---------- */
+  function startGame(){
+    state = { i: 0, answers: [], started: true };
+    renderQuestion();
+    show(el.quiz);
+  }
+
+  $("startBtn").addEventListener("click", startGame);
+  $("againBtn").addEventListener("click", startGame);
+  $("homeBtn").addEventListener("click", function(){ renderStats(); show(el.start); });
+
+  el.back.addEventListener("click", function(){
+    if(state.i > 0){
+      state.i--;
+      renderQuestion();
+    }
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(!el.quiz.classList.contains("active")) {
+      if(e.key === "Enter" && el.start.classList.contains("active")) startGame();
+      return;
+    }
+    var n = parseInt(e.key, 10);
+    if(n >= 1 && n <= 4){
+      var btns = el.opts.querySelectorAll(".opt");
+      if(btns[n - 1]) btns[n - 1].click();
+    }
+    if(e.key === "Backspace" || e.key === "ArrowLeft"){
+      e.preventDefault();
+      if(state.i > 0){ state.i--; renderQuestion(); }
+    }
+  });
+
+  renderStats();
+})();
+</script>
+</body>
+</html>
