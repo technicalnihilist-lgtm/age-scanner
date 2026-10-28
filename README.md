@@ -2,6 +2,10 @@
 
 A face-age estimator that runs entirely in your browser. Open the file, drop in a photo, and it finds the face and estimates the age — no server, no upload, no internet connection.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-7c5cff.svg)](LICENSE)
+[![No network](https://img.shields.io/badge/network-none-3ddc97.svg)](
+[![APK](https://img.shields.io/badge/APK-906%20KB-22d3ee.svg)](https://github.com/technicalnihilist-lgtm/age-scanner/releases/latest)
+
 ![Age Scanner overview](screenshots/overview.jpg)
 
 ## Download
@@ -52,4 +56,13 @@ The "view agreement" percentage measures how closely the five views agree with e
 
 ## License
 
-The app code is free to use and modify. Bundled libraries and model weights keep their original licenses (face-api.js is MIT).
+**MIT** — see [LICENSE](LICENSE). Fork it, ship it, sell it, change it; just keep the copyright notice.
+
+Bundled third-party parts keep their own licences:
+
+- [face-api.js](https://github.com/justadudewhohacks/face-api.js) — MIT (detector, landmark and age networks, and their weights)
+- [TensorFlow.js](https://github.com/tensorflow/tfjs) — Apache-2.0 (bundled inside face-api.js)
+
+## Contributing
+
+Issues and pull requests are welcome. The most useful contribution right now would be a better age model: the current one is small enough to live inside a single HTML file, and it shows. See the accuracy note above.
