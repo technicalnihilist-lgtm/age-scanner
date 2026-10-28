@@ -2,7 +2,7 @@
 
 A face-age estimator that runs entirely in your browser. Open the file, drop in a photo, and it finds the face and estimates the age — no server, no upload, no internet connection.
 
-![Age Scanner overview](screenshots/overview.png)
+![Age Scanner overview](screenshots/overview.jpg)
 
 ## What's in here
 
@@ -22,7 +22,7 @@ Both are single self-contained HTML files. Double-click either one and it runs f
 
 Switch to **Fast · 1 view** to skip the ensemble.
 
-![Ready state](screenshots/ready.png)
+![Ready state](screenshots/ready.jpg)
 
 ## Honest accuracy note
 
