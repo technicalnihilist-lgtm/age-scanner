@@ -4,12 +4,19 @@ A face-age estimator that runs entirely in your browser. Open the file, drop in 
 
 ![Age Scanner overview](screenshots/overview.jpg)
 
+## Download
+
+**[⬇ AgeScanner-v1.0.apk (906 KB)](https://github.com/technicalnihilist-lgtm/age-scanner/releases/download/v1.0/AgeScanner-v1.0.apk)** — signed Android app, minSdk 24. No `INTERNET` permission at all.
+
+**Or run it in the browser:** https://technicalnihilist-lgtm.github.io/age-scanner/
+
 ## What's in here
 
 | File | What it is |
 | --- | --- |
 | `AgeScanner.html` | The real app. Photo → detected face → estimated age. |
 | `AgeGuesser.html` | A bonus: a 12-question lifestyle quiz that guesses your age without any photo. |
+| `android/` | Source of the APK — a WebView shell, three files and a build script, no Gradle. |
 
 Both are single self-contained HTML files. Double-click either one and it runs from your local disk.
 
