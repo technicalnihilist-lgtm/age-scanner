@@ -609,8 +609,10 @@
         var perFace = highAccuracy ? 5 : 1;
         var base = crops[i * perFace];
         var thumbs = [];
-        for(var k = 0; k < perFace && (i * perFace + k) < crops.length; k++){
-          thumbs.push(crops[i * perFace + k].toDataURL("image/jpeg", 0.62));
+        if(highAccuracy){
+          for(var k = 0; k < perFace && (i * perFace + k) < crops.length; k++){
+            thumbs.push(crops[i * perFace + k].toDataURL("image/jpeg", 0.62));
+          }
         }
         out.push({
           x: box.x * sx, y: box.y * sy, w: box.width * sx, h: box.height * sy,
