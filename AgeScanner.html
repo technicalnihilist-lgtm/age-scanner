@@ -291,6 +291,7 @@
   };
 
   var srcCanvas = null, detections = [], busy = false, ready = false;
+  var scanGeneration = 0, detectorOpts = null, detectorOptsSize = 0;
   var stream = null, inputSize = 416, highAccuracy = true;
 
   function setStatus(msg, isErr){
@@ -354,12 +355,17 @@
         try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); } catch(e){ bmp = null; }
       }
       if(!bmp){
-        bmp = await new Promise(function(res, rej){
-          var im = new Image();
-          im.onload = function(){ res(im); };
-          im.onerror = rej;
-          im.src = URL.createObjectURL(file);
-        });
+        var objUrl = URL.createObjectURL(file);
+        try {
+          bmp = await new Promise(function(res, rej){
+            var im = new Image();
+            im.onload = function(){ res(im); };
+            im.onerror = rej;
+            im.src = objUrl;
+          });
+        } finally {
+          URL.revokeObjectURL(objUrl);
+        }
       }
       await useBitmap(bmp, bmp.width || bmp.naturalWidth, bmp.height || bmp.naturalHeight);
     } catch(e){
@@ -791,6 +797,7 @@
   el.modeFast.addEventListener("click", function(){ setMode(false); });
   el.reset.addEventListener("click", function(){
     stopCamera();
+    scanGeneration++;
     detections = []; srcCanvas = null;
     el.photo.removeAttribute("src");
     el.frame.classList.remove("on");
