@@ -512,6 +512,7 @@
     if(!ready){ setStatus("Models are still loading…", true); return; }
     if(busy) return;
     busy = true;
+    var scanId = ++scanGeneration;
 
     el.tag.classList.add("on", "busy");
     el.tagTxt.textContent = "Detecting face…";
