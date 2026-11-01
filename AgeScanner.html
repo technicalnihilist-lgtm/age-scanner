@@ -374,6 +374,10 @@
   }
 
   async function useBitmap(bmp, w, h){
+    if(!w || !h){
+      setStatus("That image has no pixels — try another file.", true);
+      return;
+    }
     /* downscale huge photos, gently upscale small ones — the detector likes detail */
     var scale = Math.min(1, MAX_SIDE / Math.max(w, h));
     if(Math.max(w, h) * scale < MIN_SIDE) scale = Math.min(2.5, MIN_SIDE / Math.max(w, h));
