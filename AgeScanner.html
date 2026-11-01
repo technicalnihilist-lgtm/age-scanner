@@ -518,6 +518,9 @@
     el.tagTxt.textContent = "Detecting face…";
     el.scanline.classList.add("on");
     el.result.classList.remove("on");
+    el.views.innerHTML = "";
+    el.faces.innerHTML = "";
+    el.warn.innerHTML = "";
     el.overlay.getContext("2d").clearRect(0, 0, el.overlay.width, el.overlay.height);
 
     try {
