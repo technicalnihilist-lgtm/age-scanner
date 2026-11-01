@@ -580,8 +580,12 @@
         });
       });
 
-      var preds = await faceapi.nets.ageGenderNet.predictAgeAndGender(crops);
-      if(!Array.isArray(preds)) preds = [preds];
+      var preds = [];
+      for(var ci = 0; ci < crops.length; ci += 5){
+        var part = await faceapi.nets.ageGenderNet.predictAgeAndGender(crops.slice(ci, ci + 5));
+        if(!Array.isArray(part)) part = [part];
+        preds = preds.concat(part);
+      }
 
       var buckets = faces.map(function(){ return []; });
       preds.forEach(function(p, i){
