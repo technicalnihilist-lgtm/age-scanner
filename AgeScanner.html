@@ -516,7 +516,11 @@
     el.overlay.getContext("2d").clearRect(0, 0, el.overlay.width, el.overlay.height);
 
     try {
-      var opts = new faceapi.TinyFaceDetectorOptions({ inputSize: inputSize, scoreThreshold: 0.35 });
+      if(!detectorOpts || detectorOptsSize !== inputSize){
+        detectorOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: inputSize, scoreThreshold: 0.35 });
+        detectorOptsSize = inputSize;
+      }
+      var opts = detectorOpts;
       function withTimeout(p){
         return Promise.race([p, new Promise(function(_, rej){
           setTimeout(function(){ rej(new Error("TIMEOUT")); }, 60000);
