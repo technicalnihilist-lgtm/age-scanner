@@ -855,6 +855,10 @@
     }
   });
 
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden && stream) stopCamera();
+  });
+
   var rt;
   window.addEventListener("resize", function(){
     clearTimeout(rt);
