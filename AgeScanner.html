@@ -650,6 +650,7 @@
   /* ---------------- drawing ---------------- */
   function drawOverlay(){
     var rect = el.photo.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1);
     var c = el.overlay;
     c.width = Math.round(rect.width * dpr);
