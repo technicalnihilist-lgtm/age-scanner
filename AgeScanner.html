@@ -684,8 +684,10 @@
     if(!rect.width || !rect.height) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1);
     var c = el.overlay;
-    c.width = Math.round(rect.width * dpr);
-    c.height = Math.round(rect.height * dpr);
+    var pxW = Math.round(rect.width * dpr), pxH = Math.round(rect.height * dpr);
+    /* assigning width/height throws the backing store away and reallocates it,
+       even when the number is the same — a resize storm used to do that per event */
+    if(c.width !== pxW || c.height !== pxH){ c.width = pxW; c.height = pxH; }
     c.style.width = rect.width + "px";
     c.style.height = rect.height + "px";
     var ctx = c.getContext("2d");
