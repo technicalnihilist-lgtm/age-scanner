@@ -531,9 +531,17 @@
       }
       var opts = detectorOpts;
       function withTimeout(p){
-        return Promise.race([p, new Promise(function(_, rej){
-          setTimeout(function(){ rej(new Error("TIMEOUT")); }, 60000);
-        })]);
+        var timer = null;
+        var guard = new Promise(function(_, rej){
+          timer = setTimeout(function(){ rej(new Error("TIMEOUT")); }, 60000);
+        });
+        /* drop the 60s timer as soon as the work settles, otherwise every scan
+           leaves a live timer holding the whole detection pipeline alive */
+        function clear(){ if(timer !== null){ clearTimeout(timer); timer = null; } }
+        return Promise.race([p, guard]).then(
+          function(v){ clear(); return v; },
+          function(e){ clear(); throw e; }
+        );
       }
 
       var faces = [], detCanvas = srcCanvas, offX = 0, offY = 0;
