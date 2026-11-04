@@ -325,9 +325,13 @@
     inputSize = backend === "webgl" ? 608 : 384;
 
     try {
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URI + "/detector");
-      await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URI + "/landmark");
-      await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URI + "/age");
+      /* the three nets are independent and their weights come from the embedded
+         store, so there is nothing to be gained by loading them one after another */
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URI + "/detector"),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URI + "/landmark"),
+        faceapi.nets.ageGenderNet.loadFromUri(MODEL_URI + "/age")
+      ]);
       ready = true;
       window.__bootMs = Math.round(performance.now());
       setStatus("Ready — pick a photo.");
