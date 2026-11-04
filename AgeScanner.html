@@ -290,7 +290,7 @@
     modeHi: document.getElementById("modeHi"), modeFast: document.getElementById("modeFast")
   };
 
-  var srcCanvas = null, detections = [], busy = false, ready = false;
+  var srcCanvas = null, detections = [], busy = false, ready = false, pendingScan = false;
   var scanGeneration = 0, detectorOpts = null, detectorOptsSize = 0;
   var stream = null, inputSize = 416, highAccuracy = true;
   var camToken = 0, camPending = false;   /* one getUserMedia request at a time */
@@ -394,8 +394,14 @@
        scan so a full-resolution photo is not held in memory next to the canvas */
     if(bmp && typeof bmp.close === "function"){ try { bmp.close(); } catch(e){} }
     srcCanvas = c;
+    /* whatever is still running belongs to the photo that was just replaced */
+    scanGeneration++;
+    /* encoding is asynchronous, so an older photo can finish after a newer one —
+       only the newest generation is allowed to reach the screen */
+    var photoToken = scanGeneration;
 
-    await showPhoto(c);
+    var shown = await showPhoto(c, photoToken);
+    if(!shown) return;
 
     el.empty.style.display = "none";
     el.frame.classList.add("on");
@@ -412,7 +418,7 @@
      main thread and then parsed again by the decoder, which stalls the page for a
      few hundred ms on a large photo; a blob URL skips both. The data URL stays as
      the fallback for browsers without toBlob. */
-  function showPhoto(c){
+  function showPhoto(c, token){
     var encoded;
     if(typeof c.toBlob === "function"){
       encoded = new Promise(function(res){
@@ -426,6 +432,11 @@
 
     return encoded.then(function(url){
       if(!url) url = c.toDataURL("image/jpeg", 0.92);
+      /* a newer photo was picked while this one was still encoding */
+      if(token !== scanGeneration){
+        if(url.indexOf("blob:") === 0) URL.revokeObjectURL(url);
+        return false;
+      }
       var prev = photoUrl;
       photoUrl = url;
       el.photo.src = url;
@@ -436,6 +447,7 @@
       }).then(function(){
         /* the previous photo's blob can go once the new one is painted */
         if(prev && prev !== url && prev.indexOf("blob:") === 0) URL.revokeObjectURL(prev);
+        return true;
       }, function(err){
         if(url.indexOf("blob:") === 0) URL.revokeObjectURL(url);
         photoUrl = prev;
@@ -566,7 +578,9 @@
   async function scan(){
     if(!ready){ setStatus("Models are still loading…", true); return; }
     if(!srcCanvas || !srcCanvas.width || !srcCanvas.height) return;
-    if(busy) return;
+    /* a scan is already running: queue this one instead of dropping it, otherwise
+       the new photo sits on screen with no result and the previous photo's boxes */
+    if(busy){ pendingScan = true; return; }
     busy = true;
     var scanId = ++scanGeneration;
 
@@ -716,6 +730,8 @@
         el.tag.classList.remove("busy");
         setTimeout(function(){ if(!busy && scanId === scanGeneration) el.tag.classList.remove("on"); }, 2600);
       }
+      /* a photo arrived while this scan was in flight — now it is this one's turn */
+      if(pendingScan){ pendingScan = false; scan(); }
     }
   }
 
