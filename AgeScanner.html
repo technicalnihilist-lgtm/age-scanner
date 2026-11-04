@@ -386,6 +386,9 @@
     c.width = Math.max(1, Math.round(w * scale));
     c.height = Math.max(1, Math.round(h * scale));
     c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    /* the decoded bitmap is only needed for that single draw — free it before the
+       scan so a full-resolution photo is not held in memory next to the canvas */
+    if(bmp && typeof bmp.close === "function"){ try { bmp.close(); } catch(e){} }
     srcCanvas = c;
 
     el.photo.src = c.toDataURL("image/jpeg", 0.92);
