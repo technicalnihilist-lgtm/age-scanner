@@ -494,6 +494,11 @@
     /* fallback when landmarks are unavailable */
     var side = Math.max(box.width, box.height) * (zoom || 1.5);
     var cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+    /* a degenerate box reaches drawImage as a zero-width source rectangle, which
+       throws IndexSizeError, or as NaN, which draws nothing at all */
+    if(!isFinite(side) || side < 1) side = Math.max(src.width, src.height) * 1.45;
+    if(!isFinite(side) || side < 1) side = CROP;
+    if(!isFinite(cx) || !isFinite(cy)){ cx = src.width / 2; cy = src.height / 2; }
     var c = document.createElement("canvas");
     c.width = CROP; c.height = CROP;
     var ctx = c.getContext("2d");
@@ -560,6 +565,7 @@
   /* ---------------- the scan ---------------- */
   async function scan(){
     if(!ready){ setStatus("Models are still loading…", true); return; }
+    if(!srcCanvas || !srcCanvas.width || !srcCanvas.height) return;
     if(busy) return;
     busy = true;
     var scanId = ++scanGeneration;
