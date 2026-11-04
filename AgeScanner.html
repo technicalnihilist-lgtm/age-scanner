@@ -293,6 +293,7 @@
   var srcCanvas = null, detections = [], busy = false, ready = false;
   var scanGeneration = 0, detectorOpts = null, detectorOptsSize = 0;
   var stream = null, inputSize = 416, highAccuracy = true;
+  var camToken = 0, camPending = false;   /* one getUserMedia request at a time */
 
   function setStatus(msg, isErr){
     el.status.textContent = msg || "";
@@ -772,11 +773,18 @@
   /* ---------------- camera ---------------- */
   async function startCamera(){
     if(stream){ stopCamera(); return; }
+    if(camPending) return;
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
       setStatus("This browser can't open a camera here. Choose a photo instead.", true); return;
     }
+    camPending = true;
+    var token = ++camToken;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 } }, audio: false });
+      var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 } }, audio: false });
+      /* the request was cancelled (reset, tab hidden, camera toggled) while the
+         permission prompt was up — hand the device straight back */
+      if(token !== camToken){ s.getTracks().forEach(function(t){ t.stop(); }); return; }
+      stream = s;
       el.video.srcObject = stream;
       el.video.style.display = "block";
       el.empty.style.display = "none";
@@ -785,12 +793,18 @@
       el.cam.textContent = "Capture";
       setStatus("Look straight at the camera, then press Capture.");
     } catch(e){
-      stream = null;
-      setStatus("Camera blocked or unavailable. You can still choose a photo file.", true);
+      if(token === camToken){
+        stream = null;
+        setStatus("Camera blocked or unavailable. You can still choose a photo file.", true);
+      }
+    } finally {
+      if(token === camToken) camPending = false;
     }
   }
 
   function stopCamera(){
+    /* cancels a getUserMedia that is still waiting on the user */
+    camToken++; camPending = false;
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; }
     el.video.srcObject = null;
     el.video.style.display = "none";
