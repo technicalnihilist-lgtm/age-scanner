@@ -572,6 +572,10 @@
         throw e;
       }
 
+      /* the stage was reset while we were detecting — these results belong to a
+         photo that is no longer on screen */
+      if(scanId !== scanGeneration) return;
+
       if(!faces.length){
         el.scanline.classList.remove("on");
         el.tagTxt.textContent = "No face found";
@@ -595,6 +599,8 @@
         if(!Array.isArray(part)) part = [part];
         preds = preds.concat(part);
       }
+
+      if(scanId !== scanGeneration) return;
 
       var buckets = faces.map(function(){ return []; });
       preds.forEach(function(p, i){
@@ -651,8 +657,10 @@
       setStatus("Scan failed: " + (err && err.message ? err.message : err), true);
     } finally {
       busy = false;
-      el.tag.classList.remove("busy");
-      setTimeout(function(){ if(!busy) el.tag.classList.remove("on"); }, 2600);
+      if(scanId === scanGeneration){
+        el.tag.classList.remove("busy");
+        setTimeout(function(){ if(!busy && scanId === scanGeneration) el.tag.classList.remove("on"); }, 2600);
+      }
     }
   }
 
@@ -846,6 +854,7 @@
     el.result.classList.remove("on");
     el.reset.style.display = "none";
     el.tag.classList.remove("on");
+    el.scanline.classList.remove("on");
     el.overlay.getContext("2d").clearRect(0, 0, el.overlay.width, el.overlay.height);
     el.file.value = "";
     setStatus(ready ? "Ready — pick a photo." : "Loading models…");
