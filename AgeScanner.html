@@ -1029,6 +1029,11 @@
   document.addEventListener("visibilitychange", function(){
     if(document.hidden && stream) stopCamera();
   });
+  /* iOS Safari does not always fire visibilitychange when a tab is closed or the
+     app is swiped away, so the camera could stay on until the page is collected */
+  window.addEventListener("pagehide", function(){
+    if(stream || camPending) stopCamera();
+  });
 
   var rt;
   window.addEventListener("resize", function(){
