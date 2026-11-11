@@ -310,6 +310,7 @@
   var scanGeneration = 0, detectorOpts = null, detectorOptsSize = 0;
   var stream = null, inputSize = 416, highAccuracy = true;
   var camToken = 0, camPending = false;   /* one getUserMedia request at a time */
+  var pickSeq = 0, shownPick = 0;         /* orders photo picks, not decode finishes */
 
   function setStatus(msg, isErr){
     el.status.textContent = msg || "";
@@ -369,6 +370,9 @@
     if(!file || !/^image\//.test(file.type || "")){
       setStatus("That doesn't look like an image file.", true); return;
     }
+    /* claimed before the decode, so ordering follows the pick, not which decode
+       happens to finish first */
+    var pick = ++pickSeq;
     setStatus("Reading photo…");
     try {
       var bmp = null;
@@ -388,7 +392,7 @@
           URL.revokeObjectURL(objUrl);
         }
       }
-      await useBitmap(bmp, bmp.width || bmp.naturalWidth, bmp.height || bmp.naturalHeight);
+      await useBitmap(bmp, bmp.width || bmp.naturalWidth, bmp.height || bmp.naturalHeight, pick);
     } catch(e){
       setStatus("Could not read that image.", true);
     }
@@ -401,7 +405,7 @@
     return { w: Math.max(1, Math.round(w * scale)), h: Math.max(1, Math.round(h * scale)) };
   }
 
-  async function useBitmap(bmp, w, h){
+  async function useBitmap(bmp, w, h, pick){
     if(!w || !h){
       setStatus("That image has no pixels — try another file.", true);
       return;
@@ -414,6 +418,10 @@
     /* the decoded bitmap is only needed for that single draw — free it before the
        scan so a full-resolution photo is not held in memory next to the canvas */
     if(bmp && typeof bmp.close === "function"){ try { bmp.close(); } catch(e){} }
+    /* two photos can be decoding at once and the slower one can finish last; an
+       older decode must not take the stage back from a photo already on screen */
+    if(pick && pick < shownPick) return;
+    if(pick) shownPick = pick;
     srcCanvas = c;
     /* whatever is still running belongs to the photo that was just replaced */
     scanGeneration++;
@@ -985,6 +993,7 @@
   async function capture(){
     var v = el.video;
     if(!v.videoWidth){ setStatus("Camera is still starting…", true); return; }
+    var pick = ++pickSeq;
     /* draw the frame straight at the size the detector will use. Going through a
        full-resolution frame canvas meant a second resample and a 1280×720 buffer
        (~3.7 MB) alive next to the downscaled copy on every capture. */
@@ -995,7 +1004,7 @@
     stopCamera();
     el.empty.style.display = "none";
     el.reset.style.display = "";
-    await useBitmap(c, c.width, c.height);
+    await useBitmap(c, c.width, c.height, pick);
   }
 
   /* ---------------- wiring ---------------- */
