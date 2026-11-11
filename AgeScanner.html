@@ -694,7 +694,12 @@
       var dispH = rect.height || el.photo.clientHeight;
       var natW = el.photo.naturalWidth || srcCanvas.width;
       var natH = el.photo.naturalHeight || srcCanvas.height;
-      var sx = dispW / natW, sy = dispH / natH;
+      /* the photo can still be un-laid-out here (hidden parent, zero-width stage),
+         and dividing by that gives 0, Infinity or NaN boxes that never come back */
+      var sx = (natW > 0 && isFinite(dispW)) ? dispW / natW : 1;
+      var sy = (natH > 0 && isFinite(dispH)) ? dispH / natH : 1;
+      if(!isFinite(sx) || sx <= 0) sx = 1;
+      if(!isFinite(sy) || sy <= 0) sy = 1;
 
       var out = [];
       faces.forEach(function(f, i){
