@@ -400,7 +400,15 @@
        only the newest generation is allowed to reach the screen */
     var photoToken = scanGeneration;
 
-    var shown = await showPhoto(c, photoToken);
+    var shown = false;
+    try {
+      shown = await showPhoto(c, photoToken);
+    } catch(e){
+      /* a decode failure for a photo that has already been replaced (or cleared by
+         New) is not a read failure — reporting it blamed the wrong file */
+      if(photoToken !== scanGeneration) return;
+      throw e;
+    }
     if(!shown) return;
 
     el.empty.style.display = "none";
