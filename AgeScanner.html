@@ -760,6 +760,12 @@
         });
       });
 
+      /* every crop has been read (brightness and thumbnails); dropping the pixel
+         buffers now keeps a group photo from pinning 5 × 224×224 canvases per
+         face until the next scan replaces them */
+      for(var rj = 0; rj < crops.length; rj++){ crops[rj].width = 0; crops[rj].height = 0; }
+      crops.length = 0;
+
       if(!out.length){
         el.scanline.classList.remove("on");
         setStatus("Found a face but couldn't read an age from it. Try a sharper, larger photo.", true);
