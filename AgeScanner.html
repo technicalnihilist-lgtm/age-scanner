@@ -245,12 +245,28 @@
     return out;
   }
 
+  /* decoded weights, keyed by file name: face-api asks for some of these files
+     more than once, and each miss re-ran atob over hundreds of kB of base64 */
+  var BYTES = {};
+
+  function bytesFor(name){
+    if(BYTES[name]) return BYTES[name];
+    var b64 = FILES[name];
+    if(!b64) return null;
+    var bytes = b64ToBytes(b64);
+    BYTES[name] = bytes;
+    /* the base64 string is ~1.3x the size of the bytes it decodes to and is never
+       needed again once the bytes are in hand */
+    FILES[name] = null;
+    return bytes;
+  }
+
   window.fetch = function(input, init){
     var url = (typeof input === "string") ? input : (input && input.url) || "";
     if(url.indexOf("age-model.local") !== -1){
       var name = url.split("/").pop().split("?")[0];
-      if(FILES[name]){
-        var body = b64ToBytes(FILES[name]);
+      var body = bytesFor(name);
+      if(body){
         var type = name.slice(-5) === ".json" ? "application/json" : "application/octet-stream";
         return Promise.resolve(new Response(body, { status: 200, headers: { "Content-Type": type } }));
       }
