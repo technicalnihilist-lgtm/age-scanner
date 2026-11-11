@@ -686,7 +686,12 @@
 
       var buckets = faces.map(function(){ return []; });
       preds.forEach(function(p, i){
-        if(p && typeof p.age === "number" && isFinite(p.age)) buckets[owners[i]].push(p.age);
+        var owner = owners[i];
+        /* the batch can hand back more predictions than crops (or fewer); an index
+           past the bucket list used to throw and lose the whole scan */
+        if(!p || typeof p.age !== "number" || !isFinite(p.age)) return;
+        if(!(owner >= 0 && owner < buckets.length)) return;
+        buckets[owner].push(p.age);
       });
 
       var rect = el.photo.getBoundingClientRect();
