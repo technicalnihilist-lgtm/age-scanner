@@ -412,7 +412,7 @@
   }
 
   /* ---------------- photo display ---------------- */
-  var photoUrl = null;
+  var photoUrl = null, photoCancel = null;
 
   /* Put the downscaled photo on screen. A data URL has to be base64-encoded on the
      main thread and then parsed again by the decoder, which stalls the page for a
@@ -439,19 +439,35 @@
       }
       var prev = photoUrl;
       photoUrl = url;
+      /* changing src cancels the load of the previous photo, so its load handler
+         never fires and its promise never settles: that hung async function, and
+         the canvas it was still holding, lived on for the rest of the session.
+         Settle it now, as "superseded". */
+      if(photoCancel) photoCancel();
       el.photo.src = url;
-      return new Promise(function(res, rej){
-        if(el.photo.complete && el.photo.naturalWidth) return res();
-        el.photo.onload = function(){ el.photo.onload = null; res(); };
-        el.photo.onerror = function(){ el.photo.onerror = null; rej(new Error("decode failed")); };
-      }).then(function(){
-        /* the previous photo's blob can go once the new one is painted */
-        if(prev && prev !== url && prev.indexOf("blob:") === 0) URL.revokeObjectURL(prev);
-        return true;
-      }, function(err){
+      return new Promise(function(res){
+        var done = false;
+        function finish(ok, err){
+          if(done) return;
+          done = true;
+          if(photoCancel === cancel) photoCancel = null;
+          res({ ok: ok, err: err || null });
+        }
+        function cancel(){ finish(false); }
+        photoCancel = cancel;
+        if(el.photo.complete && el.photo.naturalWidth) return finish(true);
+        el.photo.onload = function(){ el.photo.onload = null; finish(true); };
+        el.photo.onerror = function(){ el.photo.onerror = null; finish(false, new Error("decode failed")); };
+      }).then(function(r){
+        if(r.ok){
+          /* the previous photo's blob can go once the new one is painted */
+          if(prev && prev !== url && prev.indexOf("blob:") === 0) URL.revokeObjectURL(prev);
+          return true;
+        }
+        if(!r.err) return false;   /* superseded: the newer photo owns the <img> */
         if(url.indexOf("blob:") === 0) URL.revokeObjectURL(url);
         photoUrl = prev;
-        throw err;
+        throw r.err;
       });
     });
   }
@@ -951,6 +967,7 @@
   el.reset.addEventListener("click", function(){
     stopCamera();
     scanGeneration++;
+    if(photoCancel){ photoCancel(); photoCancel = null; }
     detections = []; srcCanvas = null;
     el.photo.removeAttribute("src");
     if(photoUrl && photoUrl.indexOf("blob:") === 0) URL.revokeObjectURL(photoUrl);
