@@ -378,17 +378,22 @@
     }
   }
 
+  /* the size the detector works at: huge photos shrink, small ones grow a little */
+  function fittedSize(w, h){
+    var scale = Math.min(1, MAX_SIDE / Math.max(w, h));
+    if(Math.max(w, h) * scale < MIN_SIDE) scale = Math.min(2.5, MIN_SIDE / Math.max(w, h));
+    return { w: Math.max(1, Math.round(w * scale)), h: Math.max(1, Math.round(h * scale)) };
+  }
+
   async function useBitmap(bmp, w, h){
     if(!w || !h){
       setStatus("That image has no pixels — try another file.", true);
       return;
     }
-    /* downscale huge photos, gently upscale small ones — the detector likes detail */
-    var scale = Math.min(1, MAX_SIDE / Math.max(w, h));
-    if(Math.max(w, h) * scale < MIN_SIDE) scale = Math.min(2.5, MIN_SIDE / Math.max(w, h));
+    var fit = fittedSize(w, h);
     var c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(w * scale));
-    c.height = Math.max(1, Math.round(h * scale));
+    c.width = fit.w;
+    c.height = fit.h;
     c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
     /* the decoded bitmap is only needed for that single draw — free it before the
        scan so a full-resolution photo is not held in memory next to the canvas */
@@ -958,9 +963,13 @@
   async function capture(){
     var v = el.video;
     if(!v.videoWidth){ setStatus("Camera is still starting…", true); return; }
+    /* draw the frame straight at the size the detector will use. Going through a
+       full-resolution frame canvas meant a second resample and a 1280×720 buffer
+       (~3.7 MB) alive next to the downscaled copy on every capture. */
+    var fit = fittedSize(v.videoWidth, v.videoHeight);
     var c = document.createElement("canvas");
-    c.width = v.videoWidth; c.height = v.videoHeight;
-    c.getContext("2d").drawImage(v, 0, 0);
+    c.width = fit.w; c.height = fit.h;
+    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
     stopCamera();
     el.empty.style.display = "none";
     el.reset.style.display = "";
