@@ -765,6 +765,8 @@
     ctx.clearRect(0, 0, rect.width, rect.height);
 
     detections.forEach(function(d, i){
+      /* a box that came out NaN or zero-sized cannot be drawn meaningfully */
+      if(!isFinite(d.x) || !isFinite(d.y) || !isFinite(d.w) || !isFinite(d.h) || d.w <= 0 || d.h <= 0) return;
       ctx.save();
       ctx.lineWidth = 2.4;
       ctx.strokeStyle = i === 0 ? "rgba(34,211,238,.95)" : "rgba(124,92,255,.85)";
@@ -795,14 +797,20 @@
   }
 
   function roundRect(ctx, x, y, w, h, r){
-    r = Math.min(r, w / 2, h / 2);
+    /* always start a fresh path: bailing out after a previous face's path was
+       built would make the caller's stroke() redraw that older shape */
     ctx.beginPath();
+    /* a negative radius, or a zero or NaN size, makes arcTo throw IndexSizeError
+       and abort the whole overlay draw, leaving the photo with no boxes at all */
+    if(!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return false;
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
     ctx.moveTo(x + r, y);
     ctx.arcTo(x + w, y, x + w, y + h, r);
     ctx.arcTo(x + w, y + h, x, y + h, r);
     ctx.arcTo(x, y + h, x, y, r);
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
+    return true;
   }
 
   /* ---------------- result ---------------- */
