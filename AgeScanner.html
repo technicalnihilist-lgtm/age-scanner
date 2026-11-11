@@ -524,6 +524,10 @@
     var lms = face.landmarks;
     if(!lms) return [boxCrop(src, face.box, 1.45)];
     var le = centre(lms.getLeftEye()), re = centre(lms.getRightEye());
+    /* an empty landmark set averages to NaN, and a zero eye distance turns into a
+       huge alignment scale; either way the crop comes out blank or wildly zoomed
+       and the age net still scores it. Use the plain box crop in both cases. */
+    if(!le || !re || !eyesApart(le, re)) return [boxCrop(src, face.box, 1.45)];
     var base = alignCrop(src, le, re, 1);
     if(!highAccuracy) return [base];
     return [
@@ -536,9 +540,18 @@
   }
 
   function centre(pts){
+    if(!pts || !pts.length) return null;
     var x = 0, y = 0;
     for(var i = 0; i < pts.length; i++){ x += pts[i].x; y += pts[i].y; }
-    return { x: x / pts.length, y: y / pts.length };
+    x /= pts.length; y /= pts.length;
+    return (isFinite(x) && isFinite(y)) ? { x: x, y: y } : null;
+  }
+
+  /* the alignment needs two distinct eyes to measure a distance and an angle */
+  function eyesApart(le, re){
+    var dx = re.x - le.x, dy = re.y - le.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    return isFinite(d) && d > 1;
   }
 
   var lumCanvas = null, lumCtx = null;
