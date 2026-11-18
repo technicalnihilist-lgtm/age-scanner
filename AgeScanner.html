@@ -697,6 +697,9 @@
           el.tagTxt.textContent = "Retrying with margin…";
           var retry = await withTimeout(faceapi.detectAllFaces(pc, opts).withFaceLandmarks(true));
           if(retry.length){ faces = retry; detCanvas = pc; offX = pad; offY = pad; }
+          /* nothing on the padded copy either: let its pixels go now rather than
+             hold a ~13 MB canvas until the collector gets round to it */
+          else { pc.width = 0; pc.height = 0; }
         }
       } catch(e){
         if(e && e.message === "TIMEOUT"){
@@ -761,6 +764,8 @@
       }
       if(queue.length) await scoreBatch(queue, queueOwners);
       queue = []; queueOwners = [];
+      /* the padded copy was only ever a source for the crops */
+      if(detCanvas !== srcCanvas){ detCanvas.width = 0; detCanvas.height = 0; }
 
       if(scanId !== scanGeneration) return;
 
