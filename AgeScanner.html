@@ -720,37 +720,49 @@
 
       el.tagTxt.textContent = "Reading " + (highAccuracy ? "5 views" : "face") + "…";
 
-      /* build every crop, then run them through the age net as one batch. Each
-         face keeps its own list: a face that had to fall back to the plain box
-         crop yields one crop, not five, so the crops cannot be indexed by a
-         fixed five-per-face stride without reading another face's pixels */
-      var crops = [], owners = [], faceCrops = [];
-      faces.forEach(function(f, fi){
-        var mine = variantsFor(detCanvas, f);
-        faceCrops.push(mine);
-        mine.forEach(function(cv){
-          crops.push(cv); owners.push(fi);
-        });
-      });
+      /* Crops are built, scored and dropped one batch of five at a time. The old
+         code built every crop for every face first — five 224x224 canvases per
+         face, ~200 kB of pixels each — and held the lot until the scan finished,
+         so a group photo kept tens of MB of canvases alive at once. */
+      var buckets = faces.map(function(){ return []; });
+      var thumbsFor = faces.map(function(){ return []; });
+      var lumFor = faces.map(function(){ return null; });
+      var queue = [], queueOwners = [];
 
-      var preds = [];
-      for(var ci = 0; ci < crops.length; ci += 5){
-        var part = await faceapi.nets.ageGenderNet.predictAgeAndGender(crops.slice(ci, ci + 5));
+      async function scoreBatch(batch, batchOwners){
+        var part = await faceapi.nets.ageGenderNet.predictAgeAndGender(batch);
         if(!Array.isArray(part)) part = [part];
-        preds = preds.concat(part);
+        for(var k = 0; k < batch.length; k++){
+          var owner = batchOwners[k], cv = batch[k], p = part[k];
+          /* the batch can hand back more predictions than crops (or fewer); an
+             index past the bucket list used to throw and lose the whole scan */
+          if(p && typeof p.age === "number" && isFinite(p.age) &&
+             owner >= 0 && owner < buckets.length) buckets[owner].push(p.age);
+          if(owner >= 0 && owner < faces.length){
+            /* the views strip and the brightness read are the only other users
+               of these pixels, so they are taken now and the canvas dropped */
+            if(highAccuracy) thumbsFor[owner].push(cv.toDataURL("image/jpeg", 0.62));
+            if(lumFor[owner] === null) lumFor[owner] = luminance(cv);
+          }
+          cv.width = 0; cv.height = 0;
+        }
+        batch.length = 0;
       }
 
-      if(scanId !== scanGeneration) return;
+      for(var fi = 0; fi < faces.length; fi++){
+        var mine = variantsFor(detCanvas, faces[fi]);
+        for(var mi = 0; mi < mine.length; mi++){
+          queue.push(mine[mi]); queueOwners.push(fi);
+          if(queue.length === 5){
+            await scoreBatch(queue, queueOwners);
+            queue = []; queueOwners = [];
+          }
+        }
+      }
+      if(queue.length) await scoreBatch(queue, queueOwners);
+      queue = []; queueOwners = [];
 
-      var buckets = faces.map(function(){ return []; });
-      preds.forEach(function(p, i){
-        var owner = owners[i];
-        /* the batch can hand back more predictions than crops (or fewer); an index
-           past the bucket list used to throw and lose the whole scan */
-        if(!p || typeof p.age !== "number" || !isFinite(p.age)) return;
-        if(!(owner >= 0 && owner < buckets.length)) return;
-        buckets[owner].push(p.age);
-      });
+      if(scanId !== scanGeneration) return;
 
       var rect = el.photo.getBoundingClientRect();
       var dispW = rect.width || el.photo.clientWidth;
@@ -771,29 +783,15 @@
         var agg = aggregate(ages);
         var raw = f.detection.box;
         var box = { x: raw.x - offX, y: raw.y - offY, width: raw.width, height: raw.height };
-        var mine = faceCrops[i] || [];
-        var base = mine[0] || null;
-        var thumbs = [];
-        if(highAccuracy){
-          for(var k = 0; k < mine.length; k++){
-            thumbs.push(mine[k].toDataURL("image/jpeg", 0.62));
-          }
-        }
         out.push({
           x: box.x * sx, y: box.y * sy, w: box.width * sx, h: box.height * sy,
           age: agg.age, sd: agg.sd, n: agg.n,
           score: f.detection.score,
           facePx: Math.max(box.width, box.height),
-          lum: base ? luminance(base) : 128,
-          thumbs: thumbs
+          lum: lumFor[i] === null ? 128 : lumFor[i],
+          thumbs: thumbsFor[i]
         });
       });
-
-      /* every crop has been read (brightness and thumbnails); dropping the pixel
-         buffers now keeps a group photo from pinning 5 × 224×224 canvases per
-         face until the next scan replaces them */
-      for(var rj = 0; rj < crops.length; rj++){ crops[rj].width = 0; crops[rj].height = 0; }
-      crops.length = 0;
 
       if(!out.length){
         el.scanline.classList.remove("on");
