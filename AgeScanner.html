@@ -1058,7 +1058,14 @@
     stopCamera();
     el.empty.style.display = "none";
     el.reset.style.display = "";
-    await useBitmap(c, c.width, c.height, pick, true);
+    try {
+      await useBitmap(c, c.width, c.height, pick, true);
+    } catch(e){
+      /* the camera is already closed and the frame already taken, so a failure
+         here would otherwise leave a blank stage with no message and an unhandled
+         rejection; only the newest capture may report it */
+      if(pick === pickSeq) setStatus("Could not read that image.", true);
+    }
   }
 
   /* ---------------- wiring ---------------- */
