@@ -289,6 +289,11 @@
   var CROP = 224;                                   /* the age net's expected input */
   /* canonical eye positions for a 224x224 aligned crop (InsightFace-style template) */
   var TPL = { lx: 76.58, ly: 103.38, rx: 147.06, ry: 103.00 };
+  /* the template's eye distance and angle are constants, so they are worked out
+     once at load instead of on every crop of every face */
+  var TPL_DX = TPL.rx - TPL.lx, TPL_DY = TPL.ry - TPL.ly;
+  var TPL_DIST = Math.sqrt(TPL_DX * TPL_DX + TPL_DY * TPL_DY);
+  var TPL_ANGLE = Math.atan2(TPL_DY, TPL_DX);
 
   var el = {
     stage: document.getElementById("stage"), empty: document.getElementById("empty"),
@@ -519,25 +524,28 @@
   }
 
   /* ---------------- aligned crops ---------------- */
-  function alignCrop(src, le, re, zoom){
+  /* one face's eyes do not move between its views, so the distance and the
+     rotation are measured once and handed to each of the crops */
+  function eyeGeometry(le, re){
+    var dx = re.x - le.x, dy = re.y - le.y;
+    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    return { x: le.x, y: le.y, scale: TPL_DIST / dist, angle: Math.atan2(dy, dx) - TPL_ANGLE };
+  }
+
+  function alignCrop(src, g, zoom){
     var c = document.createElement("canvas");
     c.width = CROP; c.height = CROP;
     var ctx = c.getContext("2d");
     ctx.fillStyle = "#7a7a7a";
     ctx.fillRect(0, 0, CROP, CROP);
 
-    var dx = re.x - le.x, dy = re.y - le.y;
-    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    var tdx = TPL.rx - TPL.lx, tdy = TPL.ry - TPL.ly;
-    var tdist = Math.sqrt(tdx * tdx + tdy * tdy);
-    var scale = (tdist / dist) * (zoom || 1);
-    var angle = Math.atan2(dy, dx) - Math.atan2(tdy, tdx);
+    var scale = g.scale * (zoom || 1);
 
     ctx.save();
     ctx.translate(TPL.lx, TPL.ly);
-    ctx.rotate(-angle);
+    ctx.rotate(-g.angle);
     ctx.scale(scale, scale);
-    ctx.translate(-le.x, -le.y);
+    ctx.translate(-g.x, -g.y);
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(src, 0, 0);
     ctx.restore();
@@ -594,13 +602,14 @@
        huge alignment scale; either way the crop comes out blank or wildly zoomed
        and the age net still scores it. Use the plain box crop in both cases. */
     if(!le || !re || !eyesApart(le, re)) return [boxCrop(src, face.box, 1.45)];
-    var base = alignCrop(src, le, re, 1);
+    var g = eyeGeometry(le, re);
+    var base = alignCrop(src, g, 1);
     if(!highAccuracy) return [base];
     return [
       base,
       flipCanvas(base),
-      alignCrop(src, le, re, 1.06),
-      alignCrop(src, le, re, 0.94),
+      alignCrop(src, g, 1.06),
+      alignCrop(src, g, 0.94),
       brighten(base, 0.10)
     ];
   }
