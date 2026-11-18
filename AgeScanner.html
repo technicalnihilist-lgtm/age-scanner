@@ -316,6 +316,7 @@
   var stream = null, inputSize = 416, highAccuracy = true;
   var camToken = 0, camPending = false;   /* one getUserMedia request at a time */
   var pickSeq = 0, shownPick = 0;         /* orders photo picks, not decode finishes */
+  var tagTimer = 0;                       /* the tag's own hide delay */
 
   function setStatus(msg, isErr){
     el.status.textContent = msg || "";
@@ -840,7 +841,13 @@
       busy = false;
       if(scanId === scanGeneration){
         el.tag.classList.remove("busy");
-        setTimeout(function(){ if(!busy && scanId === scanGeneration) el.tag.classList.remove("on"); }, 2600);
+        /* one hide timer at a time: it used to be left running, so a reset or a
+           new scan could have two of them queued for the same tag */
+        clearTimeout(tagTimer);
+        tagTimer = setTimeout(function(){
+          tagTimer = 0;
+          if(!busy && scanId === scanGeneration) el.tag.classList.remove("on");
+        }, 2600);
       }
       /* a photo arrived while this scan was in flight — now it is this one's turn */
       if(pendingScan){ pendingScan = false; scan(); }
@@ -1045,6 +1052,7 @@
   el.reset.addEventListener("click", function(){
     stopCamera();
     scanGeneration++;
+    clearTimeout(tagTimer); tagTimer = 0;
     if(photoCancel){ photoCancel(); photoCancel = null; }
     detections = []; srcCanvas = null;
     el.photo.removeAttribute("src");
