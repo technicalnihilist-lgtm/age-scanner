@@ -720,10 +720,15 @@
 
       el.tagTxt.textContent = "Reading " + (highAccuracy ? "5 views" : "face") + "…";
 
-      /* build every crop, then run them through the age net as one batch */
-      var crops = [], owners = [];
+      /* build every crop, then run them through the age net as one batch. Each
+         face keeps its own list: a face that had to fall back to the plain box
+         crop yields one crop, not five, so the crops cannot be indexed by a
+         fixed five-per-face stride without reading another face's pixels */
+      var crops = [], owners = [], faceCrops = [];
       faces.forEach(function(f, fi){
-        variantsFor(detCanvas, f).forEach(function(cv){
+        var mine = variantsFor(detCanvas, f);
+        faceCrops.push(mine);
+        mine.forEach(function(cv){
           crops.push(cv); owners.push(fi);
         });
       });
@@ -766,12 +771,12 @@
         var agg = aggregate(ages);
         var raw = f.detection.box;
         var box = { x: raw.x - offX, y: raw.y - offY, width: raw.width, height: raw.height };
-        var perFace = highAccuracy ? 5 : 1;
-        var base = crops[i * perFace];
+        var mine = faceCrops[i] || [];
+        var base = mine[0] || null;
         var thumbs = [];
         if(highAccuracy){
-          for(var k = 0; k < perFace && (i * perFace + k) < crops.length; k++){
-            thumbs.push(crops[i * perFace + k].toDataURL("image/jpeg", 0.62));
+          for(var k = 0; k < mine.length; k++){
+            thumbs.push(mine[k].toDataURL("image/jpeg", 0.62));
           }
         }
         out.push({
