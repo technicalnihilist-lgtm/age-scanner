@@ -681,7 +681,7 @@
     el.views.innerHTML = "";
     el.faces.innerHTML = "";
     el.warn.innerHTML = "";
-    el.overlay.getContext("2d").clearRect(0, 0, el.overlay.width, el.overlay.height);
+    clearOverlay();
 
     try {
       if(!detectorOpts || detectorOptsSize !== inputSize){
@@ -856,6 +856,16 @@
   }
 
   /* ---------------- drawing ---------------- */
+  /* The overlay context keeps whatever dpr transform the last draw left on it, so
+     a clear has to drop that first; otherwise the rectangle is measured in CSS
+     pixels against a backing store that is twice as large. */
+  function clearOverlay(){
+    var c = el.overlay;
+    var ctx = c.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+  }
+
   function drawOverlay(){
     var rect = el.photo.getBoundingClientRect();
     if(!rect.width || !rect.height) return;
@@ -1072,7 +1082,7 @@
     el.reset.style.display = "none";
     el.tag.classList.remove("on");
     el.scanline.classList.remove("on");
-    el.overlay.getContext("2d").clearRect(0, 0, el.overlay.width, el.overlay.height);
+    clearOverlay();
     el.file.value = "";
     setStatus(ready ? "Ready — pick a photo." : "Loading models…");
   });
