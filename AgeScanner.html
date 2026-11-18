@@ -583,9 +583,13 @@
   }
 
   function variantsFor(src, face){
-    var lms = face.landmarks;
-    if(!lms) return [boxCrop(src, face.box, 1.45)];
-    var le = centre(lms.getLeftEye()), re = centre(lms.getRightEye());
+    var lms = face.landmarks, le = null, re = null;
+    if(lms && typeof lms.getLeftEye === "function" && typeof lms.getRightEye === "function"){
+      /* a landmark set that cannot be read is not worth losing every face on the
+         photo over: one throwing accessor used to abort the whole scan */
+      try { le = centre(lms.getLeftEye()); re = centre(lms.getRightEye()); }
+      catch(e){ le = null; re = null; }
+    }
     /* an empty landmark set averages to NaN, and a zero eye distance turns into a
        huge alignment scale; either way the crop comes out blank or wildly zoomed
        and the age net still scores it. Use the plain box crop in both cases. */
