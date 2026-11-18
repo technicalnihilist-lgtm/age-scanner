@@ -317,6 +317,7 @@
   var camToken = 0, camPending = false;   /* one getUserMedia request at a time */
   var pickSeq = 0, shownPick = 0;         /* orders photo picks, not decode finishes */
   var tagTimer = 0;                       /* the tag's own hide delay */
+  var confTimer = 0;                      /* the confidence bar's reveal delay */
 
   function setStatus(msg, isErr){
     el.status.textContent = msg || "";
@@ -947,7 +948,13 @@
     el.marker.style.left = age + "%";
     el.confBar.style.width = "0%";
     el.confTxt.textContent = conf + "%";
-    setTimeout(function(){ el.confBar.style.width = conf + "%"; }, 60);
+    /* the 60 ms delay exists to restart the bar's transition; keeping its handle
+       means a reset cannot leave one queued to write to a cleared panel */
+    clearTimeout(confTimer);
+    confTimer = setTimeout(function(){
+      confTimer = 0;
+      el.confBar.style.width = conf + "%";
+    }, 60);
 
     el.views.innerHTML = "";
     if(highAccuracy && top.thumbs && top.thumbs.length){
@@ -1053,6 +1060,7 @@
     stopCamera();
     scanGeneration++;
     clearTimeout(tagTimer); tagTimer = 0;
+    clearTimeout(confTimer); confTimer = 0;
     if(photoCancel){ photoCancel(); photoCancel = null; }
     detections = []; srcCanvas = null;
     el.photo.removeAttribute("src");
