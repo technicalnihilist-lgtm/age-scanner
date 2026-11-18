@@ -405,19 +405,28 @@
     return { w: Math.max(1, Math.round(w * scale)), h: Math.max(1, Math.round(h * scale)) };
   }
 
-  async function useBitmap(bmp, w, h, pick){
+  /* `fitted` means the caller has already drawn the pixels at exactly the size
+     the detector works at, so there is nothing to rescale */
+  async function useBitmap(bmp, w, h, pick, fitted){
     if(!w || !h){
       setStatus("That image has no pixels — try another file.", true);
       return;
     }
-    var fit = fittedSize(w, h);
-    var c = document.createElement("canvas");
-    c.width = fit.w;
-    c.height = fit.h;
-    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-    /* the decoded bitmap is only needed for that single draw — free it before the
-       scan so a full-resolution photo is not held in memory next to the canvas */
-    if(bmp && typeof bmp.close === "function"){ try { bmp.close(); } catch(e){} }
+    var c;
+    if(fitted){
+      /* a captured frame: copying it into a second canvas of the same size is a
+         full-frame resample for no change at all, and keeps two buffers alive */
+      c = bmp;
+    } else {
+      var fit = fittedSize(w, h);
+      c = document.createElement("canvas");
+      c.width = fit.w;
+      c.height = fit.h;
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      /* the decoded bitmap is only needed for that single draw — free it before
+         the scan so a full-resolution photo is not held next to the canvas */
+      if(bmp && typeof bmp.close === "function"){ try { bmp.close(); } catch(e){} }
+    }
     /* two photos can be decoding at once and the slower one can finish last; an
        older decode must not take the stage back from a photo already on screen */
     if(pick && pick < shownPick) return;
@@ -1012,7 +1021,7 @@
     stopCamera();
     el.empty.style.display = "none";
     el.reset.style.display = "";
-    await useBitmap(c, c.width, c.height, pick);
+    await useBitmap(c, c.width, c.height, pick, true);
   }
 
   /* ---------------- wiring ---------------- */
