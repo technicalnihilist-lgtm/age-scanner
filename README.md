@@ -1,10 +1,10 @@
 <div align="center">
 
+<img src="assets/icon.png" width="96" height="96" alt="Offline face-age estimator icon">
+
+<img src="assets/banner.svg" alt="Offline face-age estimator — drop a photo, it finds the face and estimates the age">
+
 <a href="https://github.com/technicalnihilist-lgtm/age-scanner/stargazers"><img src="https://img.shields.io/badge/stars-0-5A31F4?style=for-the-badge&logo=github&logoColor=white" alt="stars: 0"></a>&nbsp;<a href="https://github.com/technicalnihilist-lgtm/age-scanner/network/members"><img src="https://img.shields.io/badge/forks-0-3FB950?style=for-the-badge" alt="forks: 0"></a>
-
-<h3>Offline face-age estimator — drop a photo, it finds the face and estimates the age</h3>
-
-<img src="https://img.shields.io/badge/HTML-5865F2?style=flat-square" alt="HTML"> <img src="https://img.shields.io/badge/Age%20Estimation-3B3F4A?style=flat-square" alt="Age Estimation"> <img src="https://img.shields.io/badge/Android-3FB950?style=flat-square" alt="Android"> <img src="https://img.shields.io/badge/Face%20Detection-EC4899?style=flat-square" alt="Face Detection">
 
 <a href="https://github.com/technicalnihilist-lgtm/age-scanner/releases/latest"><img src="https://img.shields.io/badge/DOWNLOAD-APK-6D5AE6?style=for-the-badge&logo=android&logoColor=white" alt="Download APK"></a> <a href="https://technicalnihilist-lgtm.github.io/age-scanner/"><img src="https://img.shields.io/badge/OPEN-WEBSITE-EC4899?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Website"></a>
 
@@ -16,13 +16,7 @@
 
 <a href="https://github.com/technicalnihilist-lgtm/age-scanner/releases/latest"><img src="https://img.shields.io/badge/VERSION-v1.0-6D5AE6?style=for-the-badge" alt="VERSION: v1.0"></a> <img src="https://img.shields.io/badge/DOWNLOADS-25-3FB950?style=for-the-badge" alt="DOWNLOADS: 25"> <a href="https://technicalnihilist-lgtm.github.io/age-scanner/"><img src="https://img.shields.io/badge/WEBSITE-LIVE-EC4899?style=for-the-badge&logo=googlechrome&logoColor=white" alt="WEBSITE: LIVE"></a>
 
-<h4>Get it from</h4>
-
-<a href="https://github.com/technicalnihilist-lgtm/age-scanner/releases"><img src="https://img.shields.io/badge/GitHub-Releases-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Releases"></a> <a href="https://technicalnihilist-lgtm.github.io/age-scanner/"><img src="https://img.shields.io/badge/Website-Live-EC4899?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Website"></a> <a href="https://github.com/technicalnihilist-lgtm/age-scanner/archive/refs/heads/main.zip"><img src="https://img.shields.io/badge/Source-ZIP-0EA5E9?style=for-the-badge&logo=github&logoColor=white" alt="Source ZIP"></a>
-
 </div>
-
----
 
 ---
 
